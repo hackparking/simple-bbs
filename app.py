@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, g
 import sqlite3
+import os
 
 app = Flask(__name__)
 DATABASE = "database.db"
@@ -9,6 +10,7 @@ def get_db():
     db = getattr(g, '_database', None)
     if db is None:
         db = g._database = sqlite3.connect(DATABASE)
+        db.row_factory = sqlite3.Row  # 辞書形式でデータを取得
     return db
 
 @app.teardown_appcontext
@@ -19,32 +21,36 @@ def close_connection(exception):
 
 # データベースの初期化
 def init_db():
-    with app.app_context():
-        db = get_db()
-        cursor = db.cursor()
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS threads (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL
-            )
-        """)
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS posts (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                thread_id INTEGER,
-                content TEXT NOT NULL,
-                FOREIGN KEY (thread_id) REFERENCES threads (id)
-            )
-        """)
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS reports (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                post_id INTEGER,
-                reason TEXT NOT NULL,
-                FOREIGN KEY (post_id) REFERENCES posts (id)
-            )
-        """)
-        db.commit()
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS threads (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS posts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            thread_id INTEGER,
+            content TEXT NOT NULL,
+            FOREIGN KEY (thread_id) REFERENCES threads (id)
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS reports (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            post_id INTEGER,
+            reason TEXT NOT NULL,
+            FOREIGN KEY (post_id) REFERENCES posts (id)
+        )
+    """)
+    db.commit()
+
+# アプリ起動時にデータベースを初期化
+@app.before_first_request
+def initialize():
+    init_db()
 
 # トップページ（スレッド一覧）
 @app.route("/")
@@ -89,5 +95,5 @@ def report(post_id):
     return redirect(url_for("index"))
 
 if __name__ == "__main__":
-    init_db()
+    init_db()  # ローカル実行時もDBを初期化
     app.run(debug=True)
