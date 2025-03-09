@@ -10,7 +10,7 @@ def get_db():
     db = getattr(g, '_database', None)
     if db is None:
         db = g._database = sqlite3.connect(DATABASE)
-        db.row_factory = sqlite3.Row  # 辞書形式でデータを取得
+        db.row_factory = sqlite3.Row
     return db
 
 @app.teardown_appcontext
@@ -47,12 +47,11 @@ def init_db():
     """)
     db.commit()
 
-# アプリ起動時にデータベースを初期化
-@app.before_first_request
-def initialize():
+# アプリ起動時にデータベースを初期化（Flask 2.3 以降）
+with app.app_context():
     init_db()
 
-# トップページ（スレッド一覧）
+# トップページ
 @app.route("/")
 def index():
     db = get_db()
@@ -95,5 +94,4 @@ def report(post_id):
     return redirect(url_for("index"))
 
 if __name__ == "__main__":
-    init_db()  # ローカル実行時もDBを初期化
     app.run(debug=True)
