@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ thread.title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>{{ thread.title }}</h1>
+    <ul>
+        {% for post in posts %}
+            <li>{{ post.content }}
+                <form action="/report/{{ post.id }}" method="POST">
+                    <input type="text" name="reason" placeholder="通報理由" required>
+                    <button type="submit">通報</button>
+                </form>
+            </li>
+        {% endfor %}
+    </ul>
+    <form action="/add_post/{{ thread.id }}" method="POST">
+        <input type="text" name="content" placeholder="コメントを入力" required>
+        <button type="submit">投稿</button>
+    </form>
+</body>
+</html>
